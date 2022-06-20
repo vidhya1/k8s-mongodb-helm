@@ -1,0 +1,36 @@
+---
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: {{ .Values.appName }}
+spec:
+  members: {{ .Values.replicaCount }}
+  type: ReplicaSet
+  version: {{ .Values.mongoVersion }}
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    - name: {{ .Values.mongoDBUsers.username }}
+      db: {{ .Values.mongoDBUsers.db }}
+      passwordSecretRef: # a reference to the secret that will be used to generate the user's password
+        name: {{ .Values.mongoDBUsers.passwordRef }}
+      roles:
+        - name: {{ .Values.mongoDBUsers.roles.name }}
+          db: {{ .Values.mongoDBUsers.roles.db }}
+        - name: {{ .Values.mongoDBUsers.roles.adminAnyDb }}
+          db: {{ .Values.mongoDBUsers.roles.db }}
+      scramCredentialsSecretName: {{ .Values.mongoDBUsers.scramCredentialsSecretName }}
+  additionalMongodConfig:
+    storage.wiredTiger.engineConfig.journalCompressor: {{ .Values.storageCompressor }}
+
+# the user credentials will be generated from this secret
+# once the credentials are generated, this secret is no longer required
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-user-password
+type: Opaque
+stringData:
+  password: {{ .Values.secretPassword }}
